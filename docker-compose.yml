@@ -1,0 +1,44 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+
+  backend:
+    build: .
+    restart: always
+    depends_on:
+      - rabbitmq
+    environment:
+      CELERY_BROKER_URL: "amqp://user:password@rabbitmq:5672//"
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    command: ["gunicorn", "desafio_fpf.wsgi:application", "--bind", "0.0.0.0:8000"]
+
+  worker:
+    build: .
+    restart: always
+    depends_on:
+      - backend
+      - rabbitmq
+    environment:
+      CELERY_BROKER_URL: "amqp://user:password@rabbitmq:5672//"
+    command: ["celery", "-A", "desafio_fpf", "worker", "--loglevel=info"]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "4200:4200"
+    working_dir: /app
+    command: ["npm", "start"]
+    depends_on:
+      - backend
