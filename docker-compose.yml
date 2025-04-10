@@ -31,6 +31,9 @@ services:
     environment:
       CELERY_BROKER_URL: "amqp://user:password@rabbitmq:5672//"
     command: ["celery", "-A", "desafio_fpf", "worker", "--loglevel=info"]
+    volumes:
+      - .:/app
+
 
   frontend:
     build:
